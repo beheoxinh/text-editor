@@ -1,11 +1,10 @@
 # TextEditor
 
-<div align="center">
-  <img src="./assets/images/docs_editor.png" alt="TextEditor" width="800"/>
 
-  <p><strong>A high-performance, lightweight, and modern code editor built with Rust and GPUI.</strong></p>
 
-  <p>
+<p><strong>A high-performance, lightweight, and modern code editor built with Rust and GPUI.</strong></p>
+
+<p>
     <a href="https://github.com/beheoxinh/text-editor">GitHub Repository</a> •
     <a href="#quick-start">Quick Start</a> •
     <a href="#features">Features</a> •
