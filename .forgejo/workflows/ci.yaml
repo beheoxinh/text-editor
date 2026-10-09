@@ -1,0 +1,45 @@
+name: test (linux amd64)
+
+on:
+  push:
+    branches:
+      - "main"
+      - "test/*"
+    tags:
+      - "*"
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: "1"
+  CARGO_INCREMENTAL: "0"
+
+jobs:
+  test-amd64:
+    runs-on: rust-22.04-amd64
+    env:
+      CC: clang
+      CXX: clang++
+      CC_x86_64_unknown_linux_musl: musl-gcc
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Cache build
+        uses: actions/cache@v3
+        id: cache-gram-build
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-gram-dev-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install dependencies
+        run: ./script/prepare-ci ci
+
+      - name: Cargo nextest
+        run: cargo nextest run --workspace --success-output never --show-progress none

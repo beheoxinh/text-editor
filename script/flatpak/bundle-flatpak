@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+
+set -euxo pipefail
+cd "$(dirname "$0")/../.."
+shopt -s extglob
+
+script/bundle-linux --flatpak --tarball
+channel=$(<crates/gram/RELEASE_CHANNEL)
+# Must match the tarball name produced by script/bundle-linux (no channel suffix).
+archive="text-editor-linux-$(uname -m).tar.gz"
+
+export CHANNEL="$channel"
+export ARCHIVE="$archive"
+export BRANDING_LIGHT="#b2d88f"
+export BRANDING_DARK="#4e4b5c"
+if [[ "$channel" == "dev" ]]; then
+    export APP_ID="app.liten.text-editor-dev"
+    export APP_NAME="TextEditor Devel"
+    export ICON_SCALABLE="app.liten.text-editor.svg"
+    export ICON_SYMBOLIC="app.liten.text-editor-symbolic.svg"
+elif [[ "$channel" == "stable" ]]; then
+    export APP_ID="app.liten.text-editor"
+    export APP_NAME="TextEditor"
+    export ICON_SCALABLE="app.liten.text-editor.svg"
+    export ICON_SYMBOLIC="app.liten.text-editor-symbolic.svg"
+else
+    echo "Invalid channel: '$channel'"
+    exit
+fi
+
+envsubst < "crates/gram/resources/flatpak/manifest-template.json" > "$APP_ID.json"
+flatpak-builder --user --install --force-clean build "$APP_ID.json"
+flatpak build-bundle ~/.local/share/flatpak/repo "target/release/$APP_ID.flatpak" "$APP_ID"
+echo "Created 'target/release/$APP_ID.flatpak'"

@@ -1,0 +1,361 @@
+# TextEditor on Linux
+
+## Distro Packages
+
+The preferred way to install is via adding a TextEditor repository file and installing
+from it. This provides the user with automatic updates once new packages are
+released. See instructions below. Alternatively, TextEditor provides prebuilt `.deb`
+and `.rpm` packages as release assets which can be downloaded at
+[TextEditor releases](https://codeberg.org/GramEditor/gram/releases).
+
+### Debian/Ubuntu
+
+```sh
+# Add the repository key
+sudo curl https://codeberg.org/api/packages/GramEditor/debian/repository.key -o /etc/apt/keyrings/forgejo-GramEditor.asc
+# Add the repository file
+echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/forgejo-GramEditor.asc] https://codeberg.org/api/packages/GramEditor/debian gram release" | sudo tee -a /etc/apt/sources.list.d/gram.list
+# Update package cache and install
+sudo apt update && sudo apt install gram
+```
+
+Requires Debian 12 (Bookworm)/Ubuntu 24.04 (noble) or later.
+
+### Fedora/RHEL/Rocky/Alma
+
+```sh
+# Add repository file
+sudo dnf config-manager addrepo --from-repofile="https://codeberg.org/api/packages/GramEditor/rpm.repo"
+# Install
+sudo dnf install gram
+```
+
+**Note**: At the time of this writing RPM package signing does not work. In
+order to be able to install TextEditor you need to set `gpgcheck=0` inside
+`/etc/yum.repos.d/rpm.repo`.
+
+Requires Fedora 42/RHEL 10.1/Rocky 10.1/Alma 10.1 or later.
+
+### OpenSUSE
+
+```sh
+sudo zypper addrepo https://codeberg.org/api/packages/GramEditor/rpm.repo
+sudo zypper install gram
+```
+
+**Note**: At the time of this writing RPM package signing does not work. In
+order to be able to install TextEditor you need to set `gpgcheck=0` inside
+`/etc/yum.repos.d/rpm.repo`.
+
+Requires Leap 16 (or Tumbleweed/Slowroll) or later.
+
+### Arch
+
+Arch Linux publishes official packages for TextEditor in their
+[extra](https://archlinux.org/packages/extra/x86_64/gram/) repository.
+
+```sh
+sudo pacman -S gram
+```
+
+Alternatively, to build and install a development snapshot from the latest Git
+HEAD, build the VCS package from the aur:
+[`gram-git`](https://aur.archlinux.org/packages/gram-git). If you install
+packages from the AUR, it is your responsibility to verify their integrity
+yourself.
+
+### Alpine
+
+Alpine Linux publishes official packages for TextEditor in their
+[testing](https://pkgs.alpinelinux.org/package/edge/testing/x86_64/gram)
+repository. Follow the
+[instructions](https://wiki.alpinelinux.org/wiki/Repositories#Using_testing_repository)
+to enable the testing repository, then run
+
+```sh
+doas apk add gram@testing
+```
+
+### Gentoo GNU/Linux
+
+Gentoo provided by TextEditor's overlay.
+
+```sh
+# replace doas if you using sudo
+doas eselect repository add gram git https://codeberg.org/GramEditor/gram-gentoo.git
+doas emerge --sync gram
+doas emerge -av app-editors/gram
+```
+
+**Note**: For more information about Gentoo package and installation ways go to
+[TextEditor's overlay repo](https://codeberg.org/GramEditor/gram-gentoo).
+
+## Flatpak
+
+TextEditor provides a prebuilt flatpak as a release asset. It can be downloaded from
+at [TextEditor releases](https://codeberg.org/GramEditor/gram/releases) and installed
+by running:
+
+```sh
+flatpak install /path/to/app.liten.text-editor-x86_64-${version}.flatpak
+```
+
+## From Tarball
+
+If there is a tarball available for your architecture at the
+[TextEditor Codeberg](https://codeberg.org/GramEditor/gram/releases) repository, you
+can follow these instructions:
+
+1. Download the
+   [install.sh](https://codeberg.org/GramEditor/gram/raw/branch/main/script/install.sh)
+   script.
+2. Run the script.
+
+```sh
+./install.sh
+```
+
+This will download latest release of TextEditor and install TextEditor to `$HOME/.local`. To
+install system-wide, use the `--prefix PREFIX` argument:
+
+```sh
+./install.sh --prefix /usr/local ./gram-linux-x86_64-1.1.0.tar.gz
+```
+
+## From Source
+
+TextEditor is open source, and you can install from source. See
+[developer notes](./development/linux.md) for instructions.
+
+## Troubleshooting
+
+### Graphics issues
+
+#### TextEditor fails to open windows
+
+TextEditor requires a GPU to run effectively. Under the hood, it uses
+[Vulkan](https://www.vulkan.org/) to communicate with the GPU. If you are seeing
+problems with performance or TextEditor fails to load, it is possible that Vulkan is
+the culprit.
+
+If you see a notification saying
+`TextEditor failed to open a window: NoSupportedDeviceFound` this means that Vulkan
+cannot find a compatible GPU. Try running
+[vkcube](https://github.com/krh/vkcube) (usually available as part of the
+`vulkaninfo` or `vulkan-tools` package on various distributions) to troubleshoot
+where the issue is coming from like so:
+
+```text
+vkcube
+```
+
+> **_Note_**: Try running in both X11 and wayland modes by running
+> `vkcube -m [x11|wayland]`. Some versions of `vkcube` use `vkcube` to run in
+> X11 and `vkcube-wayland` to run in wayland.
+
+This should output a line describing your current graphics setup and show a
+rotating cube. If this does not work, you should be able to fix it by installing
+Vulkan compatible GPU drivers, however in some cases there is no Vulkan support
+yet.
+
+You can find out which graphics card TextEditor is using by looking in the TextEditor log
+(`~/.local/share/text-editor/logs/TextEditor.log`) for `Using GPU: ...`.
+
+If you see errors like `ERROR_INITIALIZATION_FAILED` or `GPU Crashed` or
+`ERROR_SURFACE_LOST_KHR` then you may be able to work around this by installing
+different drivers for your GPU, or by selecting a different GPU to run on. (See
+[#14225](https://github.com/zed-industries/zed/issues/14225))
+
+On some systems the file `/etc/prime-discrete` can be used to enforce the use of
+a discrete GPU using [PRIME](https://wiki.archlinux.org/title/PRIME). Depending
+on the details of your setup, you may need to change the contents of this file
+to "on" (to force discrete graphics) or "off" (to force integrated graphics).
+
+On others, you may be able to the environment variable `DRI_PRIME=1` when
+running TextEditor to force the use of the discrete GPU.
+
+If you're using an AMD GPU and TextEditor crashes when selecting long lines, try
+setting the `TEXTEDITOR_PATH_SAMPLE_COUNT=0` environment variable (`GRAM_PATH_SAMPLE_COUNT` legacy). (See
+[#26143](https://github.com/zed-industries/zed/issues/26143))
+
+If you're using an AMD GPU, you might get a 'Broken Pipe' error. Try using the
+RADV or Mesa drivers. (See
+[#13880](https://github.com/zed-industries/zed/issues/13880))
+
+If you are using `amdvlk`, the default open-source AMD graphics driver, you may
+find that TextEditor consistently fails to launch. This is a known issue for some
+users, for example on Omarchy (see issue
+[#28851](https://github.com/zed-industries/zed/issues/28851)). To fix this, you
+will need to use a different driver. We recommend removing the `amdvlk` and
+`lib32-amdvlk` packages and installing `vulkan-radeon` instead (see issue
+[#14141](https://github.com/zed-industries/zed/issues/14141)).
+
+For more information, the
+[Arch guide to Vulkan](https://wiki.archlinux.org/title/Vulkan) has some good
+steps that translate well to most distributions.
+
+#### Forcing TextEditor to use a specific GPU
+
+There are a few different ways to force TextEditor to use a specific GPU:
+
+##### Option A
+
+You can use the `TEXTEDITOR_DEVICE_ID={device_id}` environment variable (`GRAM_DEVICE_ID` legacy) to specify the
+device ID of the GPU you wish to have TextEditor use.
+
+You can obtain the device ID of your GPU by running `lspci -nn | grep VGA` which
+will output each GPU on one line like:
+
+```sh
+08:00.0 VGA compatible controller [0300]: NVIDIA Corporation GA104 [GeForce RTX 3070] [10de:2484] (rev a1)
+```
+
+where the device ID here is `2484`. This value is in hexadecimal, so to force
+TextEditor to use this specific GPU you would set the environment variable like so:
+
+```sh
+TEXTEDITOR_DEVICE_ID=0x2484 text-editor
+```
+
+Make sure to export the variable if you choose to define it globally in a
+`.bashrc` or similar.
+
+##### Option B
+
+If you are using Mesa, you can run
+`MESA_VK_DEVICE_SELECT=list gram --foreground` to get a list of available GPUs
+and then export `MESA_VK_DEVICE_SELECT=xxxx:yyyy` to choose a specific device.
+Furthermore, you can fallback to xwayland with an additional export of
+`WAYLAND_DISPLAY=""`.
+
+##### Option C
+
+Using [vkdevicechooser](https://github.com/jiriks74/vkdevicechooser).
+
+#### Generating debug reports
+
+Passing the `--system-specs` flag to TextEditor like
+
+```sh
+text-editor --system-specs
+```
+
+will print the system specs to the terminal.
+
+The editor log is usually located at `~/.local/share/text-editor/logs/TextEditor.log`.
+
+To generate a clean log file for debugging graphics issues, run:
+
+```sh
+truncate -s 0 ~/.local/share/text-editor/logs/TextEditor.log # Clear the log file
+TEXTEDITOR_LOG=wgpu=info text-editor .
+cat ~/.local/share/text-editor/logs/TextEditor.log
+# copy the output
+```
+
+Or, if you have the TextEditor cli setup, you can do
+
+```sh
+TEXTEDITOR_LOG=wgpu=info /path/to/text-editor/cli --foreground .
+# copy the output
+```
+
+### Forcing X11 scale factor
+
+On X11 systems, TextEditor automatically detects the appropriate scale factor for
+high-DPI displays. The scale factor is determined using the following priority
+order:
+
+1. `GPUI_X11_SCALE_FACTOR` environment variable (if set)
+2. `Xft.dpi` from X resources database (xrdb)
+3. Automatic detection via RandR based on monitor resolution and physical size
+
+If you want to customize the scale factor beyond what TextEditor detects
+automatically, you have several options:
+
+#### Check your current scale factor
+
+You can verify if you have `Xft.dpi` set:
+
+```sh
+xrdb -query | grep Xft.dpi
+```
+
+If this command returns no output, TextEditor is using RandR (X11's monitor management
+extension) to automatically calculate the scale factor based on your monitor's
+reported resolution and physical dimensions.
+
+#### Option 1: Set Xft.dpi (X Resources Database)
+
+`Xft.dpi` is a standard X11 setting that many applications use for consistent
+font and UI scaling. Setting this ensures TextEditor scales the same way as other X11
+applications that respect this setting.
+
+Edit or create the `~/.Xresources` file:
+
+```sh
+vim ~/.Xresources
+```
+
+Add this line with your desired DPI:
+
+```sh
+Xft.dpi: 96
+```
+
+Common DPI values:
+
+- `96` for standard 1x scaling
+- `144` for 1.5x scaling
+- `192` for 2x scaling
+- `288` for 3x scaling
+
+Load the configuration:
+
+```sh
+xrdb -merge ~/.Xresources
+```
+
+Restart TextEditor for the changes to take effect.
+
+#### Option 2: Use the GPUI_X11_SCALE_FACTOR environment variable
+
+This TextEditor-specific environment variable directly sets the scale factor,
+bypassing all automatic detection.
+
+```sh
+GPUI_X11_SCALE_FACTOR=1.5 text-editor
+```
+
+You can use decimal values (e.g., `1.25`, `1.5`, `2.0`) or set
+`GPUI_X11_SCALE_FACTOR=randr` to force RandR-based detection even when `Xft.dpi`
+is set.
+
+To make this permanent, add it to your shell profile or desktop entry.
+
+#### Option 3: Adjust system-wide RandR DPI
+
+This changes the reported DPI for your entire X11 session, affecting how RandR
+calculates scaling for all applications that use it.
+
+Add this to your `.xprofile` or `.xinitrc`:
+
+```sh
+xrandr --dpi 192
+```
+
+Replace `192` with your desired DPI value. This affects the system globally and
+will be used by TextEditor's automatic RandR detection when `Xft.dpi` is not set.
+
+### Font rendering parameters
+
+On Linux, the `TEXTEDITOR_FONTS_GAMMA` and `TEXTEDITOR_FONTS_GRAYSCALE_ENHANCED_CONTRAST`
+environment variables (`GRAM_FONTS_GAMMA` and `GRAM_FONTS_GRAYSCALE_ENHANCED_CONTRAST` legacy) are read for the values to use for font rendering.
+
+`TEXTEDITOR_FONTS_GAMMA` corresponds to
+[getgamma](https://learn.microsoft.com/en-us/windows/win32/api/dwrite/nf-dwrite-idwriterenderingparams-getgamma)
+values. Allowed range [1.0, 2.2], other values are clipped. Default: 1.8
+
+`TEXTEDITOR_FONTS_GRAYSCALE_ENHANCED_CONTRAST` corresponds to
+[getgrayscaleenhancedcontrast](https://learn.microsoft.com/en-us/windows/win32/api/dwrite_1/nf-dwrite_1-idwriterenderingparams1-getgrayscaleenhancedcontrast)
+values. Allowed range: [0.0, ..), other values are clipped. Default: 1.0
